@@ -12,6 +12,7 @@ import {
 import storage from 'redux-persist/lib/storage';
 import authReducer from './slices/authSlice';
 import recipeReducer from './slices/recipeSlice';
+import createRecipeReducer from './slices/createrecipe';
 
 // Persist configuration
 const persistConfig = {
@@ -23,7 +24,8 @@ const persistConfig = {
 // Combine reducers
 const rootReducer = combineReducers({
   auth: authReducer,
-  recipe: recipeReducer
+  recipe: recipeReducer,
+  createRecipe: createRecipeReducer,
 });
 
 // Persist reducer
