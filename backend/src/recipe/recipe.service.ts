@@ -1,29 +1,43 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
-import { CreateRecipeDto, UpdateRecipeDto } from './dto/recipe.dto';
 import { Recipe, RecipeDocument } from 'schemas/recipe.schema';
 import { UserDocument } from 'schemas/user.schema';
+import { ErrorHandler } from '@src/utills/errorHandler';
+import { RecipeType } from '@src/utills/recipe.interface';
+import { CreateRecipeDto } from './dto/recipe.dto';
 
 @Injectable()
 export class RecipeService {
   constructor(
     @InjectModel(Recipe.name) private recipeModel: Model<RecipeDocument>,
     @InjectModel('User') private readonly userModel: Model<UserDocument>
-  ) { }
+  ) {}
 
-  // Create a new recipe
-  async create(createRecipeDto: CreateRecipeDto, user: any): Promise<RecipeDocument> {
+  /**
+   * Creates a new recipe with the given details and associates it with the user ID.
+   *
+   * @param createRecipeDto The data transfer object containing the recipe details.
+   * @param userId The ID of the user creating the recipe.
+   * @return The newly created recipe document.
+   */
+  async create(createRecipeDto: CreateRecipeDto, userId: string): Promise<RecipeDocument> {
     try {
       // Validate required fields
-      if (!createRecipeDto.title || !createRecipeDto.ingredients || !createRecipeDto.instructions) {
-        throw new BadRequestException('Title, ingredients, and instructions are required.');
+      if (!createRecipeDto.title) {
+        throw new BadRequestException('Title is required.'); // Validate title
+      }
+      if (!createRecipeDto.ingredients) {
+        throw new BadRequestException('Ingredients are required.'); // Validate ingredients
+      }
+      if (!createRecipeDto.instructions) {
+        throw new BadRequestException('Instructions are required.'); // Validate instructions
       }
 
       // Create a new recipe with the provided data and the user ID
       const newRecipe = new this.recipeModel({
         ...createRecipeDto,
-        createdBy: user.userId
+        createdBy: userId
       });
 
       // Save the new recipe to the database
@@ -31,12 +45,16 @@ export class RecipeService {
 
     } catch (error) {
       // Delegate error handling to the handleError method
-      this.handleError(error, 'Error creating the recipe');
+      ErrorHandler.handleError(error, 'Error creating the recipe');
     }
   }
 
-  // Find All recipes
-  async findAll(): Promise<any[]> {
+  /**
+   * Retrieves all recipes with author information.
+   *
+   * @return An array of recipes with author details.
+   */
+  async findAll(): Promise<RecipeType[]> {
     try {
       const recipes = await this.recipeModel.aggregate([
         {
@@ -44,7 +62,7 @@ export class RecipeService {
             from: 'users', // The collection name for users
             localField: 'createdBy',
             foreignField: '_id',
-            as: 'authorInfo',
+            as: 'authorInfo', // Join user information
           },
         },
         {
@@ -59,22 +77,27 @@ export class RecipeService {
             tags: 1,
             createdAt: 1,
             photo: 1,
-            author: '$authorInfo.username', // Rename the field
+            author: '$authorInfo.username', // Rename the field for output
           },
         },
       ]).exec();
 
-      return recipes;
+      return recipes; // Return the aggregated recipes
     } catch (error) {
       // Use the handleError method for consistent error handling
-      this.handleError(error, 'Error fetching recipes');
+      ErrorHandler.handleError(error, 'Error fetching recipes');
     }
   }
 
-  // Find one recipe by ID
-  async findOne(id: string): Promise<any> {
+  /**
+   * Finds a single recipe by its ID.
+   *
+   * @param id The ID of the recipe to find.
+   * @return The requested recipe document.
+   */
+  async findOne(id: string): Promise<Recipe> {
     try {
-      const objectId = new mongoose.Types.ObjectId(id);
+      const objectId = new mongoose.Types.ObjectId(id); // Convert the ID to ObjectId
       const recipe = await this.recipeModel
         .findById(objectId)
         .populate('createdBy', 'username image bio') // Populate user fields
@@ -82,36 +105,12 @@ export class RecipeService {
         .exec();
 
       if (!recipe) {
-        throw new NotFoundException(`Recipe with ID ${id} not found`);
+        throw new NotFoundException(`Recipe with ID ${id} not found`); // Throw error if recipe is not found
       }
 
-      return recipe
+      return recipe; // Return the found recipe
     } catch (error) {
-      console.error('Error fetching recipe:', error); 
-      this.handleError(error, `Recipe with ID ${id} not found`);
+      ErrorHandler.handleError(error, `Recipe with ID ${id} not found`);
     }
-  }
-
-  // Error handler method for validation and server errors
-  private handleError(error: any, customMessage?: string) {
-    // Handle validation errors
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map((err: any) => err.message);
-      throw new BadRequestException(validationErrors.join(', '));
-    }
-
-    // Handle unique constraint violations
-    if (error.code === 11000) {
-      const fieldName = Object.keys(error.keyValue)[0];
-      throw new BadRequestException(`The ${fieldName} must be unique`);
-    }
-
-    // Handle other Mongoose errors (cast errors, etc.)
-    if (error.name === 'CastError') {
-      throw new NotFoundException(customMessage || 'Resource not found');
-    }
-
-    // For any other errors
-    throw new InternalServerErrorException(customMessage || 'An unexpected error occurred');
   }
 }

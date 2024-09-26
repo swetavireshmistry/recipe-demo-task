@@ -2,40 +2,49 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 
 export type RecipeDocument = Recipe & Document;
-
-@Schema({ timestamps: true })
+@Schema({
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    versionKey: false,
+    transform: (doc, ret) => {
+      delete ret.updatedAt;
+      return ret;
+    }
+  }
+})
 export class Recipe {
   @Prop({ required: true })
-  title: string; // Title of Recipe
+  title: string;
 
   @Prop({ required: true })
-  photo: string; // Photo of Recipe
-  @Prop({ required: true })
-  ingredients: string[]; // Array of ingredients
+  photo: string;
 
   @Prop({ required: true })
-  instructions: string[]; // Array of instructions, step-by-step
+  ingredients: string[];
 
   @Prop({ required: true })
-  cookTime: string; // Cooking time, e.g., "30 mins"
+  instructions: string[];
 
   @Prop({ required: true })
-  prepTime: string; // Preparation time, e.g., "15 mins"
+  cookTime: string;
+  @Prop({ required: true })
+  prepTime: string;
 
   @Prop({ required: false })
-  description?: string; // Optional serving size
+  description?: string;
 
   @Prop({
     required: true,
     enum: ['easy', 'medium', 'hard'],
   })
-  difficulty: string; // Difficulty level
+  difficulty: string;
 
   @Prop({ required: false, type: [String] })
-  tags?: string[]; // Optional tags like 'veg', 'nonveg', etc.
+  tags?: string[];
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
-  createdBy: string; // ID of the user who created the recipe
+  createdBy: string;
 }
 
 export const RecipeSchema = SchemaFactory.createForClass(Recipe);

@@ -17,6 +17,5 @@ export class CreateUserDto {
   @IsString()
   bio: string;
 
-  // Optional: You can add image as well
   image?: string;
 }

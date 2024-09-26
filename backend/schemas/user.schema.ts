@@ -4,8 +4,25 @@ import * as bcrypt from 'bcryptjs';
 import * as validator from 'validator';
 
 export type UserDocument = User & Document;
-
-@Schema({ timestamps: true })
+@Schema({ 
+  timestamps: true,
+  toJSON: {
+    transform(doc, ret) {
+      delete ret.password;
+      delete ret.__v; 
+      delete ret.updatedAt; 
+      return ret;
+    }
+  },
+  toObject: {
+    transform(doc, ret) {
+      delete ret.password;
+      delete ret.__v; 
+      delete ret.updatedAt; 
+      return ret;
+    }
+  }
+})
 export class User {
   @Prop({ required: true })
   username: string;
@@ -42,9 +59,8 @@ export class User {
 }
 
 // Create a password validator function
-function validatePassword(password: string): boolean {
-  const passwordPattern =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+function validatePassword(password: string): boolean {  
+  const passwordPattern = new RegExp(process.env.PASSWORD_PATTERN!);
   return passwordPattern.test(password);
 }
 

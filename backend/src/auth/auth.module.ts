@@ -1,18 +1,20 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { UserModule } from '@src/user/user.module';
+import { JwtStrategy } from '@src/utills/jwt.strategy';
 import { AuthService } from './auth.service';
-import { UserModule } from 'src/user/user.module';
-import { JwtStrategy } from 'src/utills/jwt.strategy';
 import { AuthController } from './auth.controller';
-@Module({
+import { ConfigModule } from '@nestjs/config';
 
+@Module({
   imports: [
+    ConfigModule.forRoot(),
     UserModule,
     PassportModule,
     JwtModule.register({
-      secret: "s3cr3tK3y!2024@jwt",
-      signOptions: { expiresIn: '1h' },
+      secret: process.env.JWT_SCRET,
+      signOptions: { expiresIn: process.env.JWT_EXPIRE },
     }),
   ],
   providers: [AuthService, JwtStrategy],

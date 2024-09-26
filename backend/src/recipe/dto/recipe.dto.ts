@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsIn, IsArray } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateRecipeDto {
@@ -7,7 +7,7 @@ export class CreateRecipeDto {
   title: string;
 
   @IsNotEmpty()
-  photo: Express.Multer.File; 
+  photo: string;
 
   @IsNotEmpty()
   @IsArray()
@@ -41,5 +41,4 @@ export class CreateRecipeDto {
   tags?: string[];
 }
 
-
-export class UpdateRecipeDto extends CreateRecipeDto {}
+export class UpdateRecipeDto extends CreateRecipeDto { }
